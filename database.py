@@ -519,9 +519,9 @@ class Database:
             
             # Try to get invoice_template from the correct position
             if len(result) >= 11:  # All columns including invoice_template
-                settings['invoice_template'] = result[9] if result[9] else 'classic'
-                settings['updated_at'] = result[10]
-            elif len(result) == 10:  # Missing invoice_template
+                settings['invoice_template'] = result[10] if result[10] else 'classic'  # Fixed: invoice_template is at index 10
+                settings['updated_at'] = result[9]  # updated_at is at index 9
+            elif len(result) == 10:  # Missing invoice_template (old structure)
                 settings['updated_at'] = result[9]
             
             return settings

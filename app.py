@@ -856,12 +856,9 @@ def company_settings_page():
     
     # Initialize or sync template selection state with database
     current_db_template = company_info.get('invoice_template', 'classic') if company_info else 'classic'
-    if 'temp_selected_template' not in st.session_state:
-        st.session_state.temp_selected_template = current_db_template
     
-    # Sync session state with database if they don't match (in case of external changes)
-    if st.session_state.temp_selected_template != current_db_template:
-        st.session_state.temp_selected_template = current_db_template
+    # Always sync session state with database value (this ensures UI reflects database state)
+    st.session_state.temp_selected_template = current_db_template
     
     with st.form("company_settings_form"):
         st.subheader("Informasi Perusahaan")
@@ -1023,7 +1020,8 @@ def company_settings_page():
                     # Update session state with saved template
                     st.session_state.temp_selected_template = selected_template
                     st.success(f"✅ Pengaturan perusahaan berhasil disimpan! Template: {selected_template}")
-                    st.rerun()
+                    # Don't call st.rerun() here to avoid resetting the form
+                    # The page will refresh naturally on next interaction
                 else:
                     st.error(f"❌ Error: {result['message']}")
             else:

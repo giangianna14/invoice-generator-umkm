@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Final Verification Script for Invoice Generator UMKM v2.1.0
-Verifies all features including the new Company Settings functionality
+Final Verification Script for Invoice Generator UMKM v2.2.0
+Verifies all features including Company Settings and Template System
 """
 
 import sys
@@ -13,6 +13,7 @@ def verify_files():
         'app.py',
         'database.py', 
         'pdf_generator.py',
+        'template_pdf_generator.py',
         'requirements.txt',
         'README.md',
         'CHANGELOG.md',
@@ -68,9 +69,18 @@ def verify_database_schema():
                     name="Test Company",
                     address="Test Address", 
                     phone="123456789",
-                    email="test@test.com"
+                    email="test@test.com",
+                    invoice_template="creative"
                 )
                 print(f"  ✅ Company settings update works")
+                
+                # Test template persistence
+                updated_settings = db.get_company_settings()
+                if updated_settings and updated_settings.get('invoice_template') == 'creative':
+                    print(f"  ✅ Template persistence works")
+                else:
+                    print(f"  ❌ Template persistence failed: {updated_settings.get('invoice_template') if updated_settings else 'None'}")
+                    return False
                 
             except Exception as e:
                 print(f"  ❌ Company settings methods error: {e}")
@@ -127,6 +137,7 @@ def verify_readme_content():
             'Company Settings' in content,
             'company information' in content.lower(),
             'pengaturan' in content.lower(),
+            'template' in content.lower(),
             os.path.exists('CHANGELOG.md')
         ]
         
@@ -134,6 +145,7 @@ def verify_readme_content():
             'Company Settings mentioned',
             'Company information described', 
             'Indonesian interface mentioned',
+            'Template system mentioned',
             'CHANGELOG.md exists'
         ]
         
@@ -153,7 +165,7 @@ def verify_readme_content():
 
 def main():
     """Run all verification checks"""
-    print("🚀 Invoice Generator UMKM v2.1.0 - Final Verification")
+    print("🚀 Invoice Generator UMKM v2.2.0 - Final Verification")
     print("=" * 60)
     
     all_checks = [
@@ -181,7 +193,8 @@ def main():
     if passed == total:
         print(f"🎉 ALL CHECKS PASSED ({passed}/{total})")
         print("\n🚀 Project is ready for production!")
-        print("📊 Features: Invoice Generation + Company Settings + CRUD + Analytics")
+        print("📊 Features: Invoice Generation + Company Settings + Template System + CRUD + Analytics")
+        print("🎨 Templates: 8 Professional Designs for UMKM Industries")
         print("🌐 GitHub: Ready for deployment")
         return True
     else:

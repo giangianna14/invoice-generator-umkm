@@ -2,6 +2,45 @@
 
 All notable changes to Invoice Generator UMKM project will be documented in this file.
 
+## [v2.2.0] - 2025-07-02
+
+### ✨ Added - Multiple Invoice Templates
+- **8 Professional Invoice Templates** - Industry-specific designs for different UMKM needs
+  - 🏛️ Klasik Profesional - Traditional business style
+  - 🎯 Modern Minimalis - Clean contemporary design  
+  - 🎨 Kreatif & Colorful - Eye-catching for creative industries
+  - 🏢 Corporate Formal - Professional with credibility emphasis
+  - 💻 Tech & Digital - Modern tech-focused design
+  - 🛍️ Retail & Fashion - Stylish and trendy
+  - 🍽️ Food & Beverage - Warm restaurant/catering design
+  - 🔧 Jasa & Konsultasi - Professional service-oriented
+- **Template Selection System** - Easy template picker in company settings
+- **Template Preview** - Generate sample invoices to preview templates
+- **Template Showcase** - Visual overview of all available templates
+- **Database Integration** - Template preference stored and applied automatically
+
+### 🛠️ Technical Improvements
+- Created `TemplatedInvoicePDFGenerator` class with modular template system
+- Enhanced database schema with `invoice_template` field in company settings
+- Updated PDF generation pipeline to use selected templates
+- Added comprehensive template preview and selection UI
+- Implemented template-specific styling and layouts
+
+### 🎨 Design Features
+- **Industry-Specific Colors** - Each template uses appropriate color schemes
+- **Professional Layouts** - Different header styles, info placement, and branding
+- **Enhanced Typography** - Template-specific fonts and sizing
+- **Visual Differentiation** - Unique design elements for each template
+- **Brand Consistency** - Company info integration across all templates
+
+### 📖 Documentation
+- Updated README with template feature documentation
+- Added template selection guide and usage instructions
+- Enhanced feature list with template capabilities
+- Updated project roadmap and statistics
+
+---
+
 ## [v2.1.0] - 2025-07-02
 
 ### ✨ Added

@@ -5,14 +5,14 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import base64
 from database import Database
-from pdf_generator import InvoicePDFGenerator
+from template_pdf_generator import TemplatedInvoicePDFGenerator
 
 # Initialize
 if 'db' not in st.session_state:
     st.session_state.db = Database()
 
 if 'pdf_generator' not in st.session_state:
-    st.session_state.pdf_generator = InvoicePDFGenerator()
+    st.session_state.pdf_generator = TemplatedInvoicePDFGenerator()
 
 # Page config
 st.set_page_config(
@@ -352,7 +352,8 @@ def create_invoice_page():
                     # Generate PDF
                     invoice_data, items_data = st.session_state.db.get_invoice_details(invoice_id)
                     company_settings = st.session_state.db.get_company_settings()
-                    pdf_data = st.session_state.pdf_generator.create_invoice_pdf(invoice_data, items_data, company_settings)
+                    selected_template = company_settings.get('invoice_template', 'classic') if company_settings else 'classic'
+                    pdf_data = st.session_state.pdf_generator.create_invoice_pdf(invoice_data, items_data, company_settings, selected_template)
                     
                     # Store PDF data in session state
                     st.session_state.created_invoice_pdf = pdf_data
@@ -922,6 +923,72 @@ def company_settings_page():
                 help="Jumlah hari default untuk jatuh tempo invoice"
             )
         
+        # Template selection
+        st.subheader("🎨 Template Design Invoice")
+        st.write("Pilih template design yang sesuai dengan industri dan brand perusahaan Anda.")
+        
+        # Import template generator to get available templates
+        from template_pdf_generator import TemplatedInvoicePDFGenerator
+        template_gen = TemplatedInvoicePDFGenerator()
+        available_templates = template_gen.get_available_templates()
+        
+        # Template selection with descriptions
+        template_options = []
+        template_descriptions = {
+            'classic': '🏛️ Klasik Profesional - Cocok untuk semua jenis bisnis, tampilan formal dan traditional',
+            'modern': '🎯 Modern Minimalis - Design clean dan contemporary, cocok untuk tech/startup',
+            'creative': '🎨 Kreatif & Colorful - Design menarik dengan warna, cocok untuk industri kreatif',
+            'corporate': '🏢 Corporate Formal - Professional dengan emphasis pada credibility',
+            'tech': '💻 Tech & Digital - Modern tech-focused design, cocok untuk IT/software',
+            'retail': '🛍️ Retail & Fashion - Stylish dan trendy, cocok untuk fashion/retail',
+            'food': '🍽️ Food & Beverage - Warm design, cocok untuk restaurant/catering',
+            'service': '🔧 Jasa & Konsultasi - Professional service-oriented design'
+        }
+        
+        for key, name in available_templates.items():
+            template_options.append(f"{template_descriptions.get(key, name)}")
+        
+        current_template = company_info.get('invoice_template', 'classic')
+        current_index = list(available_templates.keys()).index(current_template) if current_template in available_templates else 0
+        
+        selected_template_index = st.selectbox(
+            "Pilih Template Invoice",
+            range(len(template_options)),
+            index=current_index,
+            format_func=lambda x: template_options[x],
+            help="Template yang dipilih akan digunakan untuk semua invoice yang dibuat"
+        )
+        
+        selected_template = list(available_templates.keys())[selected_template_index]
+        
+        # Template preview info
+        col_preview1, col_preview2 = st.columns([2, 1])
+        with col_preview1:
+            template_features = {
+                'classic': '• Header company yang prominent\n• Layout traditional & formal\n• Color scheme: biru & abu-abu\n• Cocok untuk: semua industri',
+                'modern': '• Design minimalis & clean\n• Typography modern\n• Color scheme: navy & light blue\n• Cocok untuk: tech, startup, consulting',
+                'creative': '• Design colorful & eye-catching\n• Layout yang dynamic\n• Color scheme: purple, orange, blue\n• Cocok untuk: design agency, marketing, event',
+                'corporate': '• Professional & authoritative\n• Emphasis pada company branding\n• Color scheme: conservative\n• Cocok untuk: law firm, finance, consulting',
+                'tech': '• Modern tech-focused design\n• Clean lines & geometric\n• Color scheme: blue gradient\n• Cocok untuk: IT, software, digital agency',
+                'retail': '• Stylish & trendy layout\n• Fashion-forward design\n• Color scheme: warm colors\n• Cocok untuk: fashion, retail, lifestyle',
+                'food': '• Warm & inviting design\n• Food industry themed\n• Color scheme: warm orange/red\n• Cocok untuk: restaurant, catering, food truck',
+                'service': '• Service-oriented layout\n• Professional but approachable\n• Color scheme: trust-building blues\n• Cocok untuk: service provider, repair, maintenance'
+            }
+            
+            st.info(f"**Template Features:**\n{template_features.get(selected_template, 'Template profesional standar')}")
+        
+        with col_preview2:
+            st.write("**Template yang dipilih:**")
+            st.write(f"**{available_templates[selected_template]}**")
+            if selected_template == 'classic':
+                st.write("🏛️ Klasik")
+            elif selected_template == 'modern':
+                st.write("🎯 Modern")
+            elif selected_template == 'creative':
+                st.write("🎨 Kreatif")
+            else:
+                st.write(f"📄 {selected_template.title()}")
+        
         # Submit button
         submitted = st.form_submit_button("💾 Simpan Pengaturan", type="primary", use_container_width=True)
         
@@ -935,7 +1002,8 @@ def company_settings_page():
                     website=website,
                     npwp=npwp,
                     default_tax_rate=default_tax_rate,
-                    default_due_days=default_due_days
+                    default_due_days=default_due_days,
+                    invoice_template=selected_template
                 )
                 if result['success']:
                     st.success("✅ Pengaturan perusahaan berhasil disimpan!")
@@ -970,6 +1038,93 @@ def company_settings_page():
         st.write("**Pengaturan Default:**")
         st.write(f"💰 Rate Pajak: {company_info.get('default_tax_rate', 11.0)}%")
         st.write(f"📅 Jatuh Tempo: {company_info.get('default_due_days', 30)} hari")
+        st.write(f"🎨 Template: {company_info.get('invoice_template', 'classic').title()}")
+    
+    # Template Preview Section
+    st.markdown("---")
+    st.subheader("🎨 Preview Template Invoice")
+    st.write("Lihat contoh tampilan invoice dengan template yang dipilih.")
+    
+    if st.button("📄 Generate Sample Invoice PDF", type="secondary", use_container_width=True):
+        # Create sample data for preview
+        sample_invoice_data = {
+            'invoice_number': 'SAMPLE-001',
+            'issue_date': datetime.now().strftime('%Y-%m-%d'),
+            'due_date': (datetime.now() + timedelta(days=company_info.get('default_due_days', 30))).strftime('%Y-%m-%d'),
+            'status': 'Preview',
+            'customer_name': 'Sample Customer',
+            'address': 'Jl. Sample No. 123\nJakarta 12345',
+            'phone': '+62 21 1234567',
+            'email': 'customer@sample.com',
+            'subtotal': 1000000,
+            'tax_rate': company_info.get('default_tax_rate', 11.0) / 100,
+            'tax_amount': 1000000 * (company_info.get('default_tax_rate', 11.0) / 100),
+            'total': 1000000 + (1000000 * (company_info.get('default_tax_rate', 11.0) / 100)),
+            'notes': 'Ini adalah contoh invoice untuk preview template'
+        }
+        
+        sample_items = pd.DataFrame([
+            {'product_name': 'Sample Product 1', 'quantity': 2, 'unit_price': 300000, 'total_price': 600000},
+            {'product_name': 'Sample Product 2', 'quantity': 1, 'unit_price': 400000, 'total_price': 400000}
+        ])
+        
+        try:
+            current_template = company_info.get('invoice_template', 'classic')
+            sample_pdf = st.session_state.pdf_generator.create_invoice_pdf(
+                sample_invoice_data, sample_items, company_info, current_template
+            )
+            
+            st.download_button(
+                label="📄 Download Sample Invoice PDF",
+                data=sample_pdf,
+                file_name=f"sample_invoice_{current_template}.pdf",
+                mime="application/pdf",
+                type="primary",
+                use_container_width=True
+            )
+            st.success("✅ Sample invoice PDF berhasil dibuat! Klik tombol di atas untuk download.")
+            
+        except Exception as e:
+            st.error(f"❌ Error generating sample PDF: {str(e)}")
+    
+    st.info("💡 **Tips**: Sample invoice akan menggunakan template dan pengaturan yang saat ini aktif. Untuk melihat perubahan template, simpan pengaturan terlebih dahulu.")
+
+    # Template Showcase Section
+    st.markdown("---")
+    st.subheader("🎭 Template Showcase")
+    st.write("Lihat contoh visual dari setiap template yang tersedia:")
+    
+    showcase_cols = st.columns(4)
+    templates_info = [
+        ('classic', '🏛️', 'Klasik', 'Professional & formal'),
+        ('modern', '🎯', 'Modern', 'Clean & minimalis'),
+        ('creative', '🎨', 'Kreatif', 'Colorful & menarik'),
+        ('corporate', '🏢', 'Corporate', 'Formal & prestigious')
+    ]
+    
+    for i, (template_key, icon, name, desc) in enumerate(templates_info):
+        with showcase_cols[i]:
+            is_current = company_info.get('invoice_template', 'classic') == template_key
+            if is_current:
+                st.success(f"**{icon} {name}** ✅\n\n{desc}\n\n*Template Aktif*")
+            else:
+                st.info(f"**{icon} {name}**\n\n{desc}")
+    
+    showcase_cols2 = st.columns(4)
+    templates_info2 = [
+        ('tech', '💻', 'Tech', 'Modern tech-focused'),
+        ('retail', '🛍️', 'Retail', 'Stylish & trendy'),
+        ('food', '🍽️', 'Food & Beverage', 'Warm & inviting'),
+        ('service', '🔧', 'Service', 'Professional service')
+    ]
+    
+    for i, (template_key, icon, name, desc) in enumerate(templates_info2):
+        with showcase_cols2[i]:
+            is_current = company_info.get('invoice_template', 'classic') == template_key
+            if is_current:
+                st.success(f"**{icon} {name}** ✅\n\n{desc}\n\n*Template Aktif*")
+            else:
+                st.info(f"**{icon} {name}**\n\n{desc}")
 
 if __name__ == "__main__":
     main()

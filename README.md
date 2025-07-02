@@ -35,6 +35,7 @@ streamlit run app.py
 ### 🧾 Invoice Management
 - ✅ **Generate Invoice PDF** - Format profesional dengan logo perusahaan
 - ✅ **Professional PDF Layout** - Template bisnis yang rapi dan modern
+- ✅ **Multiple Invoice Templates** - 8 template design sesuai industri UMKM
 - ✅ **Auto Invoice Numbering** - Format INV-YYYYMMDD-HHMMSS
 - ✅ **Tax Calculation** - Perhitungan pajak otomatis (default 11%)
 - ✅ **Multi-Currency Format** - Format Rupiah yang rapi
@@ -71,6 +72,9 @@ streamlit run app.py
 - ✅ **Smart Product Selection** - Tab untuk master data vs manual input
 - ✅ **Duplicate Product Handling** - Warning dan opsi gunakan existing
 - ✅ **Company Information Management** - Atur info perusahaan (nama, alamat, kontak, NPWP)
+- ✅ **Multiple Invoice Templates** - 8 template design profesional sesuai industri
+- ✅ **Template Preview System** - Preview sample invoice dengan template pilihan
+- ✅ **Industry-Specific Design** - Template khusus retail, F&B, tech, service, dll
 - ✅ **Customizable Business Settings** - Default tax rate dan due date settings
 - ✅ **Professional PDF Branding** - Header perusahaan otomatis di setiap invoice
 - ✅ **Responsive Design** - Akses optimal dari desktop dan mobile
@@ -207,13 +211,25 @@ invoice_generator/
 ## 📖 How to Use
 
 ### 1. **Setup Master Data**
-#### Company Settings (New!)
+#### Company Settings (Enhanced!)
 - **Setup Company Info**: Menu "Pengaturan" → Isi informasi perusahaan lengkap
 - **Company Details**: Nama perusahaan, alamat, telepon, email (wajib)
 - **Additional Info**: Website, NPWP (opsional untuk compliance)
 - **Business Settings**: Default tax rate (%) dan due date (hari)
+- **Invoice Template Selection**: Pilih dari 8 template design profesional
+- **Template Preview**: Generate sample invoice untuk preview template
 - **Real-time Preview**: Lihat preview info yang akan muncul di PDF
 - **Professional PDF Header**: Info perusahaan otomatis tampil di semua invoice
+
+#### Available Invoice Templates
+1. **🏛️ Klasik Profesional** - Traditional business style, cocok untuk semua industri
+2. **🎯 Modern Minimalis** - Clean contemporary design, cocok untuk tech/startup
+3. **🎨 Kreatif & Colorful** - Eye-catching design untuk industri kreatif
+4. **🏢 Corporate Formal** - Professional dengan emphasis pada credibility
+5. **💻 Tech & Digital** - Modern tech-focused design untuk IT/software
+6. **🛍️ Retail & Fashion** - Stylish dan trendy untuk fashion/retail
+7. **🍽️ Food & Beverage** - Warm design untuk restaurant/catering
+8. **🔧 Jasa & Konsultasi** - Professional service-oriented design
 
 #### Customer Management
 - **Add**: Tambah customer baru dengan nama, email, phone, alamat
@@ -301,6 +317,9 @@ invoice_generator/
 - ✅ Customer & product CRUD operations
 - ✅ Professional PDF export with branding
 - ✅ Company information management with customizable settings
+- ✅ Multiple invoice templates (8 professional designs)
+- ✅ Template preview and selection system
+- ✅ Industry-specific invoice designs
 - ✅ Advanced dashboard with analytics
 - ✅ Master data integration with smart selection
 - ✅ Search, sort, and filter functionality
@@ -393,10 +412,11 @@ Jika aplikasi ini membantu bisnis Anda, berikan ⭐ di GitHub!
 ## 📈 Stats
 
 - ✅ **100%** CRUD functionality
-- ✅ **18+** core features implemented  
-- ✅ **12+** advanced features ready
+- ✅ **22+** core features implemented  
+- ✅ **8** professional invoice templates
+- ✅ **15+** advanced features ready
 - ✅ **0** known critical bugs
-- ✅ **NEW:** Company settings management
+- ✅ **NEW:** Multiple invoice templates system
 
 ## 🙏 Acknowledgments
 

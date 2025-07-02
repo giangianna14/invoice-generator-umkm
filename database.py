@@ -80,9 +80,17 @@ class Database:
                 npwp TEXT DEFAULT '',
                 default_tax_rate REAL DEFAULT 11.0,
                 default_due_days INTEGER DEFAULT 30,
+                invoice_template TEXT DEFAULT 'classic',
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
+        # Add template column if it doesn't exist (for existing databases)
+        try:
+            cursor.execute('ALTER TABLE company_settings ADD COLUMN invoice_template TEXT DEFAULT "classic"')
+        except sqlite3.OperationalError:
+            # Column already exists
+            pass
         
         # Insert default company settings if table is empty
         cursor.execute('SELECT COUNT(*) FROM company_settings')
@@ -504,11 +512,12 @@ class Database:
                 'npwp': result[6],
                 'default_tax_rate': result[7],
                 'default_due_days': result[8],
-                'updated_at': result[9]
+                'invoice_template': result[9] if len(result) > 9 else 'classic',
+                'updated_at': result[10] if len(result) > 10 else result[9]
             }
         return None
     
-    def update_company_settings(self, name, address, phone, email, website="", npwp="", default_tax_rate=11.0, default_due_days=30):
+    def update_company_settings(self, name, address, phone, email, website="", npwp="", default_tax_rate=11.0, default_due_days=30, invoice_template="classic"):
         """Update company settings"""
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -523,17 +532,17 @@ class Database:
                 cursor.execute('''
                     UPDATE company_settings 
                     SET name = ?, address = ?, phone = ?, email = ?, website = ?, 
-                        npwp = ?, default_tax_rate = ?, default_due_days = ?, 
+                        npwp = ?, default_tax_rate = ?, default_due_days = ?, invoice_template = ?,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE id = ?
-                ''', (name, address, phone, email, website, npwp, default_tax_rate, default_due_days, result[0]))
+                ''', (name, address, phone, email, website, npwp, default_tax_rate, default_due_days, invoice_template, result[0]))
             else:
                 # Insert new settings
                 cursor.execute('''
                     INSERT INTO company_settings 
-                    (name, address, phone, email, website, npwp, default_tax_rate, default_due_days)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (name, address, phone, email, website, npwp, default_tax_rate, default_due_days))
+                    (name, address, phone, email, website, npwp, default_tax_rate, default_due_days, invoice_template)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (name, address, phone, email, website, npwp, default_tax_rate, default_due_days, invoice_template))
             
             conn.commit()
             conn.close()

@@ -854,6 +854,15 @@ def company_settings_page():
     # Get current company settings
     company_info = st.session_state.db.get_company_settings()
     
+    # Initialize or sync template selection state with database
+    current_db_template = company_info.get('invoice_template', 'classic') if company_info else 'classic'
+    if 'temp_selected_template' not in st.session_state:
+        st.session_state.temp_selected_template = current_db_template
+    
+    # Sync session state with database if they don't match (in case of external changes)
+    if st.session_state.temp_selected_template != current_db_template:
+        st.session_state.temp_selected_template = current_db_template
+    
     with st.form("company_settings_form"):
         st.subheader("Informasi Perusahaan")
         st.write("Informasi ini akan muncul di PDF invoice yang dihasilkan.")
@@ -948,7 +957,8 @@ def company_settings_page():
         for key, name in available_templates.items():
             template_options.append(f"{template_descriptions.get(key, name)}")
         
-        current_template = company_info.get('invoice_template', 'classic')
+        # Use session state for current template to avoid reset issues
+        current_template = st.session_state.temp_selected_template
         current_index = list(available_templates.keys()).index(current_template) if current_template in available_templates else 0
         
         selected_template_index = st.selectbox(
@@ -956,10 +966,14 @@ def company_settings_page():
             range(len(template_options)),
             index=current_index,
             format_func=lambda x: template_options[x],
-            help="Template yang dipilih akan digunakan untuk semua invoice yang dibuat"
+            help="Template yang dipilih akan digunakan untuk semua invoice yang dibuat",
+            key="template_selector"
         )
         
         selected_template = list(available_templates.keys())[selected_template_index]
+        
+        # Update session state with current selection
+        st.session_state.temp_selected_template = selected_template
         
         # Template preview info
         col_preview1, col_preview2 = st.columns([2, 1])
@@ -1006,7 +1020,9 @@ def company_settings_page():
                     invoice_template=selected_template
                 )
                 if result['success']:
-                    st.success("✅ Pengaturan perusahaan berhasil disimpan!")
+                    # Update session state with saved template
+                    st.session_state.temp_selected_template = selected_template
+                    st.success(f"✅ Pengaturan perusahaan berhasil disimpan! Template: {selected_template}")
                     st.rerun()
                 else:
                     st.error(f"❌ Error: {result['message']}")
@@ -1038,7 +1054,8 @@ def company_settings_page():
         st.write("**Pengaturan Default:**")
         st.write(f"💰 Rate Pajak: {company_info.get('default_tax_rate', 11.0)}%")
         st.write(f"📅 Jatuh Tempo: {company_info.get('default_due_days', 30)} hari")
-        st.write(f"🎨 Template: {company_info.get('invoice_template', 'classic').title()}")
+        current_template_name = st.session_state.temp_selected_template.title() if hasattr(st.session_state, 'temp_selected_template') else company_info.get('invoice_template', 'classic').title()
+        st.write(f"🎨 Template: {current_template_name}")
     
     # Template Preview Section
     st.markdown("---")
@@ -1069,7 +1086,8 @@ def company_settings_page():
         ])
         
         try:
-            current_template = company_info.get('invoice_template', 'classic')
+            # Use the currently selected template (from session state)
+            current_template = st.session_state.temp_selected_template if hasattr(st.session_state, 'temp_selected_template') else company_info.get('invoice_template', 'classic')
             sample_pdf = st.session_state.pdf_generator.create_invoice_pdf(
                 sample_invoice_data, sample_items, company_info, current_template
             )
@@ -1104,9 +1122,11 @@ def company_settings_page():
     
     for i, (template_key, icon, name, desc) in enumerate(templates_info):
         with showcase_cols[i]:
-            is_current = company_info.get('invoice_template', 'classic') == template_key
+            # Use session state for current template check
+            current_selected = st.session_state.temp_selected_template if hasattr(st.session_state, 'temp_selected_template') else company_info.get('invoice_template', 'classic')
+            is_current = current_selected == template_key
             if is_current:
-                st.success(f"**{icon} {name}** ✅\n\n{desc}\n\n*Template Aktif*")
+                st.success(f"**{icon} {name}** ✅\n\n{desc}\n\n*Template Dipilih*")
             else:
                 st.info(f"**{icon} {name}**\n\n{desc}")
     
@@ -1120,9 +1140,11 @@ def company_settings_page():
     
     for i, (template_key, icon, name, desc) in enumerate(templates_info2):
         with showcase_cols2[i]:
-            is_current = company_info.get('invoice_template', 'classic') == template_key
+            # Use session state for current template check
+            current_selected = st.session_state.temp_selected_template if hasattr(st.session_state, 'temp_selected_template') else company_info.get('invoice_template', 'classic')
+            is_current = current_selected == template_key
             if is_current:
-                st.success(f"**{icon} {name}** ✅\n\n{desc}\n\n*Template Aktif*")
+                st.success(f"**{icon} {name}** ✅\n\n{desc}\n\n*Template Dipilih*")
             else:
                 st.info(f"**{icon} {name}**\n\n{desc}")
 

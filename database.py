@@ -502,19 +502,29 @@ class Database:
         conn.close()
         
         if result:
-            return {
+            # Handle different column counts for backward compatibility
+            settings = {
                 'id': result[0],
                 'name': result[1],
                 'address': result[2],
                 'phone': result[3],
                 'email': result[4],
-                'website': result[5],
-                'npwp': result[6],
-                'default_tax_rate': result[7],
-                'default_due_days': result[8],
-                'invoice_template': result[9] if len(result) > 9 else 'classic',
-                'updated_at': result[10] if len(result) > 10 else result[9]
+                'website': result[5] if len(result) > 5 else '',
+                'npwp': result[6] if len(result) > 6 else '',
+                'default_tax_rate': result[7] if len(result) > 7 else 11.0,
+                'default_due_days': result[8] if len(result) > 8 else 30,
+                'invoice_template': 'classic',  # Default value
+                'updated_at': result[-1]  # Last column is always updated_at
             }
+            
+            # Try to get invoice_template from the correct position
+            if len(result) >= 11:  # All columns including invoice_template
+                settings['invoice_template'] = result[9] if result[9] else 'classic'
+                settings['updated_at'] = result[10]
+            elif len(result) == 10:  # Missing invoice_template
+                settings['updated_at'] = result[9]
+            
+            return settings
         return None
     
     def update_company_settings(self, name, address, phone, email, website="", npwp="", default_tax_rate=11.0, default_due_days=30, invoice_template="classic"):

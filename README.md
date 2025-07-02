@@ -39,6 +39,7 @@ streamlit run app.py
 - ✅ **Tax Calculation** - Perhitungan pajak otomatis (default 11%)
 - ✅ **Multi-Currency Format** - Format Rupiah yang rapi
 - ✅ **Invoice Status Tracking** - Draft, Paid, Overdue status
+- ✅ **Company Settings** - Atur informasi perusahaan untuk header invoice
 
 ### 👥 Customer Management (Full CRUD)
 - ✅ **Add Customers** - Tambah customer dengan data lengkap
@@ -69,6 +70,9 @@ streamlit run app.py
 - ✅ **Master Data Integration** - Pilih produk dari database atau input manual
 - ✅ **Smart Product Selection** - Tab untuk master data vs manual input
 - ✅ **Duplicate Product Handling** - Warning dan opsi gunakan existing
+- ✅ **Company Information Management** - Atur info perusahaan (nama, alamat, kontak, NPWP)
+- ✅ **Customizable Business Settings** - Default tax rate dan due date settings
+- ✅ **Professional PDF Branding** - Header perusahaan otomatis di setiap invoice
 - ✅ **Responsive Design** - Akses optimal dari desktop dan mobile
 - ✅ **Session Management** - State management yang robust
 - ✅ **Error Handling** - Comprehensive error handling dan validation
@@ -203,6 +207,14 @@ invoice_generator/
 ## 📖 How to Use
 
 ### 1. **Setup Master Data**
+#### Company Settings (New!)
+- **Setup Company Info**: Menu "Pengaturan" → Isi informasi perusahaan lengkap
+- **Company Details**: Nama perusahaan, alamat, telepon, email (wajib)
+- **Additional Info**: Website, NPWP (opsional untuk compliance)
+- **Business Settings**: Default tax rate (%) dan due date (hari)
+- **Real-time Preview**: Lihat preview info yang akan muncul di PDF
+- **Professional PDF Header**: Info perusahaan otomatis tampil di semua invoice
+
 #### Customer Management
 - **Add**: Tambah customer baru dengan nama, email, phone, alamat
 - **Search**: Gunakan search box untuk cari customer cepat
@@ -288,6 +300,7 @@ invoice_generator/
 - ✅ Complete invoice generation system
 - ✅ Customer & product CRUD operations
 - ✅ Professional PDF export with branding
+- ✅ Company information management with customizable settings
 - ✅ Advanced dashboard with analytics
 - ✅ Master data integration with smart selection
 - ✅ Search, sort, and filter functionality
@@ -295,6 +308,7 @@ invoice_generator/
 - ✅ Excel reporting with custom date ranges
 - ✅ Responsive UI with modern design
 - ✅ Data integrity protection
+- ✅ Real-time company settings with PDF integration
 
 ### 🚧 Phase 2 (In Progress)
 - 💳 Payment integration (Midtrans/QRIS)
@@ -379,9 +393,10 @@ Jika aplikasi ini membantu bisnis Anda, berikan ⭐ di GitHub!
 ## 📈 Stats
 
 - ✅ **100%** CRUD functionality
-- ✅ **15+** core features implemented  
-- ✅ **10+** advanced features ready
+- ✅ **18+** core features implemented  
+- ✅ **12+** advanced features ready
 - ✅ **0** known critical bugs
+- ✅ **NEW:** Company settings management
 
 ## 🙏 Acknowledgments
 

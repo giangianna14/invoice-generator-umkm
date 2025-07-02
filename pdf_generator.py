@@ -17,7 +17,7 @@ class InvoicePDFGenerator:
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=self.page_size)
         
-        # Default company info
+        # Default company info or format from database
         if not company_info:
             company_info = {
                 'name': 'Nama Perusahaan Anda',
@@ -25,6 +25,20 @@ class InvoicePDFGenerator:
                 'phone': '+62 xxx-xxxx-xxxx',
                 'email': 'email@perusahaan.com'
             }
+        else:
+            # Format company info from database format
+            formatted_info = {
+                'name': company_info.get('name', 'Nama Perusahaan Anda'),
+                'address': company_info.get('address', 'Alamat Perusahaan\nKota, Kode Pos'),
+                'phone': company_info.get('phone', '+62 xxx-xxxx-xxxx'),
+                'email': company_info.get('email', 'email@perusahaan.com')
+            }
+            # Add website and NPWP if available
+            if company_info.get('website'):
+                formatted_info['website'] = company_info['website']
+            if company_info.get('npwp'):
+                formatted_info['npwp'] = company_info['npwp']
+            company_info = formatted_info
         
         story = []
         
@@ -46,7 +60,15 @@ class InvoicePDFGenerator:
         
         # Company Header
         story.append(Paragraph(company_info['name'], header_style))
-        story.append(Paragraph(f"{company_info['address']}<br/>{company_info['phone']}<br/>{company_info['email']}", company_style))
+        
+        # Build company details
+        company_details = f"{company_info['address']}<br/>{company_info['phone']}<br/>{company_info['email']}"
+        if company_info.get('website'):
+            company_details += f"<br/>{company_info['website']}"
+        if company_info.get('npwp'):
+            company_details += f"<br/>NPWP: {company_info['npwp']}"
+            
+        story.append(Paragraph(company_details, company_style))
         
         # Invoice Title
         invoice_title = ParagraphStyle(

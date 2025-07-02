@@ -29,7 +29,7 @@ def main():
     st.sidebar.title("Menu")
     page = st.sidebar.selectbox(
         "Pilih Halaman",
-        ["Dashboard", "Buat Invoice", "Data Customer", "Data Produk", "Laporan"]
+        ["Dashboard", "Buat Invoice", "Data Customer", "Data Produk", "Laporan", "Pengaturan"]
     )
     
     if page == "Dashboard":
@@ -42,6 +42,8 @@ def main():
         product_management()
     elif page == "Laporan":
         reports_page()
+    elif page == "Pengaturan":
+        company_settings_page()
 
 def show_dashboard():
     st.header("📊 Dashboard")
@@ -349,7 +351,8 @@ def create_invoice_page():
                     
                     # Generate PDF
                     invoice_data, items_data = st.session_state.db.get_invoice_details(invoice_id)
-                    pdf_data = st.session_state.pdf_generator.create_invoice_pdf(invoice_data, items_data)
+                    company_settings = st.session_state.db.get_company_settings()
+                    pdf_data = st.session_state.pdf_generator.create_invoice_pdf(invoice_data, items_data, company_settings)
                     
                     # Store PDF data in session state
                     st.session_state.created_invoice_pdf = pdf_data
@@ -843,6 +846,130 @@ def reports_page():
     
     else:
         st.info("Tidak ada data untuk periode yang dipilih")
+
+def company_settings_page():
+    st.header("⚙️ Pengaturan Perusahaan")
+    
+    # Get current company settings
+    company_info = st.session_state.db.get_company_settings()
+    
+    with st.form("company_settings_form"):
+        st.subheader("Informasi Perusahaan")
+        st.write("Informasi ini akan muncul di PDF invoice yang dihasilkan.")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            company_name = st.text_input(
+                "Nama Perusahaan*", 
+                value=company_info.get('name', 'Nama Perusahaan Anda'),
+                help="Nama perusahaan yang akan muncul di header invoice"
+            )
+            
+            phone = st.text_input(
+                "Telepon", 
+                value=company_info.get('phone', '+62 xxx-xxxx-xxxx'),
+                help="Nomor telepon perusahaan"
+            )
+            
+            email = st.text_input(
+                "Email", 
+                value=company_info.get('email', 'email@perusahaan.com'),
+                help="Email perusahaan"
+            )
+        
+        with col2:
+            address = st.text_area(
+                "Alamat Perusahaan", 
+                value=company_info.get('address', 'Alamat Perusahaan\nKota, Kode Pos'),
+                height=100,
+                help="Alamat lengkap perusahaan"
+            )
+            
+            website = st.text_input(
+                "Website (Opsional)", 
+                value=company_info.get('website', ''),
+                help="Website perusahaan (opsional)"
+            )
+            
+            npwp = st.text_input(
+                "NPWP (Opsional)", 
+                value=company_info.get('npwp', ''),
+                help="Nomor NPWP perusahaan (opsional)"
+            )
+        
+        # Additional settings
+        st.subheader("Pengaturan Tambahan")
+        
+        col3, col4 = st.columns(2)
+        
+        with col3:
+            default_tax_rate = st.number_input(
+                "Rate Pajak Default (%)", 
+                min_value=0.0, 
+                max_value=100.0, 
+                value=company_info.get('default_tax_rate', 11.0),
+                step=0.1,
+                help="Rate pajak default untuk invoice baru"
+            )
+        
+        with col4:
+            default_due_days = st.number_input(
+                "Jatuh Tempo Default (Hari)", 
+                min_value=1, 
+                max_value=365, 
+                value=company_info.get('default_due_days', 30),
+                help="Jumlah hari default untuk jatuh tempo invoice"
+            )
+        
+        # Submit button
+        submitted = st.form_submit_button("💾 Simpan Pengaturan", type="primary", use_container_width=True)
+        
+        if submitted:
+            if company_name:
+                result = st.session_state.db.update_company_settings(
+                    name=company_name,
+                    address=address,
+                    phone=phone,
+                    email=email,
+                    website=website,
+                    npwp=npwp,
+                    default_tax_rate=default_tax_rate,
+                    default_due_days=default_due_days
+                )
+                if result['success']:
+                    st.success("✅ Pengaturan perusahaan berhasil disimpan!")
+                    st.rerun()
+                else:
+                    st.error(f"❌ Error: {result['message']}")
+            else:
+                st.error("Nama perusahaan wajib diisi")
+    
+    # Preview section
+    st.markdown("---")
+    st.subheader("👁️ Preview Informasi Perusahaan")
+    
+    col_preview1, col_preview2 = st.columns(2)
+    
+    with col_preview1:
+        st.write("**Informasi yang akan muncul di PDF:**")
+        preview_info = f"""
+        **{company_info.get('name', 'Nama Perusahaan Anda')}**  
+        📍 {company_info.get('address', 'Alamat Perusahaan')}  
+        📞 {company_info.get('phone', '+62 xxx-xxxx-xxxx')}  
+        📧 {company_info.get('email', 'email@perusahaan.com')}
+        """
+        if company_info.get('website'):
+            preview_info += f"  \n🌐 {company_info['website']}"
+        if company_info.get('npwp'):
+            preview_info += f"  \n🆔 NPWP: {company_info['npwp']}"
+        
+        st.markdown(preview_info)
+    
+    with col_preview2:
+        st.write("**Pengaturan Default:**")
+        st.write(f"💰 Rate Pajak: {company_info.get('default_tax_rate', 11.0)}%")
+        st.write(f"📅 Jatuh Tempo: {company_info.get('default_due_days', 30)} hari")
 
 if __name__ == "__main__":
     main()

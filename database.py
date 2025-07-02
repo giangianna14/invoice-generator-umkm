@@ -68,6 +68,30 @@ class Database:
             )
         ''')
         
+        # Company settings table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS company_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL DEFAULT 'Nama Perusahaan Anda',
+                address TEXT DEFAULT 'Alamat Perusahaan\nKota, Kode Pos',
+                phone TEXT DEFAULT '+62 xxx-xxxx-xxxx',
+                email TEXT DEFAULT 'email@perusahaan.com',
+                website TEXT DEFAULT '',
+                npwp TEXT DEFAULT '',
+                default_tax_rate REAL DEFAULT 11.0,
+                default_due_days INTEGER DEFAULT 30,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Insert default company settings if table is empty
+        cursor.execute('SELECT COUNT(*) FROM company_settings')
+        if cursor.fetchone()[0] == 0:
+            cursor.execute('''
+                INSERT INTO company_settings (name, address, phone, email)
+                VALUES (?, ?, ?, ?)
+            ''', ('Nama Perusahaan Anda', 'Alamat Perusahaan\nKota, Kode Pos', '+62 xxx-xxxx-xxxx', 'email@perusahaan.com'))
+        
         conn.commit()
         conn.close()
     
@@ -459,3 +483,70 @@ class Database:
                 'created_at': result[4]
             }
         return None
+    
+    def get_company_settings(self):
+        """Get company settings"""
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM company_settings ORDER BY id DESC LIMIT 1')
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            return {
+                'id': result[0],
+                'name': result[1],
+                'address': result[2],
+                'phone': result[3],
+                'email': result[4],
+                'website': result[5],
+                'npwp': result[6],
+                'default_tax_rate': result[7],
+                'default_due_days': result[8],
+                'updated_at': result[9]
+            }
+        return None
+    
+    def update_company_settings(self, name, address, phone, email, website="", npwp="", default_tax_rate=11.0, default_due_days=30):
+        """Update company settings"""
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        try:
+            # Check if settings exist
+            cursor.execute('SELECT id FROM company_settings ORDER BY id DESC LIMIT 1')
+            result = cursor.fetchone()
+            
+            if result:
+                # Update existing settings
+                cursor.execute('''
+                    UPDATE company_settings 
+                    SET name = ?, address = ?, phone = ?, email = ?, website = ?, 
+                        npwp = ?, default_tax_rate = ?, default_due_days = ?, 
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                ''', (name, address, phone, email, website, npwp, default_tax_rate, default_due_days, result[0]))
+            else:
+                # Insert new settings
+                cursor.execute('''
+                    INSERT INTO company_settings 
+                    (name, address, phone, email, website, npwp, default_tax_rate, default_due_days)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (name, address, phone, email, website, npwp, default_tax_rate, default_due_days))
+            
+            conn.commit()
+            conn.close()
+            
+            return {
+                'success': True,
+                'message': 'Pengaturan perusahaan berhasil disimpan!'
+            }
+            
+        except Exception as e:
+            conn.rollback()
+            conn.close()
+            return {
+                'success': False,
+                'message': f'Error: {str(e)}'
+            }

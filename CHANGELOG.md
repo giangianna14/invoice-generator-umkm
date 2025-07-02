@@ -2,6 +2,40 @@
 
 All notable changes to Invoice Generator UMKM project will be documented in this file.
 
+## [v2.2.1] - 2025-07-03
+
+### 🐛 Bug Fixes - Template Persistence
+- **Fixed Template Selection Bug** - Template selection now properly persists after saving settings
+- **Database Column Index Fix** - Corrected template column reading in `get_company_settings()`
+  - Fixed index position from 9 to 10 for `invoice_template` field
+  - Resolved issue where template value was incorrectly read from `updated_at` timestamp
+- **Session State Synchronization** - Improved session state management for template selection
+  - Always sync `temp_selected_template` with database value on page load
+  - Removed conflicting conditional logic that caused state mismatches
+- **Form Submission Flow** - Optimized form submission behavior
+  - Removed unnecessary `st.rerun()` that caused form reset issues
+  - Template selection UI now reflects saved state immediately after submit
+
+### 🧪 Testing & Validation
+- Added comprehensive test script (`test_template_fix_clean.py`)
+- Verified template persistence across all 8 template types
+- Confirmed database storage and retrieval functionality
+- Validated UI state synchronization with database
+
+### 🔧 Technical Details
+- Updated `database.py`: Fixed column indexing in row result parsing
+- Updated `app.py`: Simplified session state synchronization logic
+- Improved error handling for backward compatibility
+- Enhanced form validation and user feedback
+
+### 📝 Impact
+- **User Experience**: Template selection now works as expected
+- **Data Integrity**: Template preferences reliably saved and restored
+- **System Stability**: Eliminated form reset issues and state conflicts
+- **Business Continuity**: Users can consistently use their preferred invoice templates
+
+---
+
 ## [v2.2.0] - 2025-07-02
 
 ### ✨ Added - Multiple Invoice Templates

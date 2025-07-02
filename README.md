@@ -73,6 +73,7 @@ streamlit run app.py
 - ✅ **Duplicate Product Handling** - Warning dan opsi gunakan existing
 - ✅ **Company Information Management** - Atur info perusahaan (nama, alamat, kontak, NPWP)
 - ✅ **Multiple Invoice Templates** - 8 template design profesional sesuai industri
+- ✅ **Template Persistence** - Template selection tersimpan permanen (FIXED v1.2.1)
 - ✅ **Template Preview System** - Preview sample invoice dengan template pilihan
 - ✅ **Industry-Specific Design** - Template khusus retail, F&B, tech, service, dll
 - ✅ **Customizable Business Settings** - Default tax rate dan due date settings
@@ -417,6 +418,22 @@ Jika aplikasi ini membantu bisnis Anda, berikan ⭐ di GitHub!
 - ✅ **15+** advanced features ready
 - ✅ **0** known critical bugs
 - ✅ **NEW:** Multiple invoice templates system
+- ✅ **FIXED:** Template persistence bug (v1.2.1)
+
+## 📋 Recent Updates
+
+### v1.2.1 (July 3, 2025) - Template Persistence Fix
+- 🐛 **Fixed**: Template selection now properly persists after saving settings
+- 🔧 **Improved**: Database column indexing for template storage
+- ⚡ **Enhanced**: Session state synchronization for better user experience
+- ✅ **Resolved**: Issue where template would revert to 'classic' after form submission
+- 🧪 **Added**: Test scripts for template persistence verification
+
+### v1.2.0 (July 2, 2025) - Multi-Template System
+- 🎨 **Added**: 8 professional invoice templates (Classic, Modern, Creative, Corporate, Tech, Retail, Food, Service)
+- 📄 **Enhanced**: Template preview and sample PDF generation
+- 🏢 **Improved**: Company settings management with template selection
+- 🎯 **Optimized**: Industry-specific template designs for UMKM needs
 
 ## 🙏 Acknowledgments
 

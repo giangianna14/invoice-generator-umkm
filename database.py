@@ -93,20 +93,66 @@ class Database:
         conn.close()
         return df
     
-    def add_product(self, name, price, description=""):
-        """Add new product"""
+    def check_product_exists(self, name):
+        """Check if product with same name already exists"""
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         
         cursor.execute('''
-            INSERT INTO products (name, price, description)
-            VALUES (?, ?, ?)
-        ''', (name, price, description))
+            SELECT id, name, price FROM products 
+            WHERE LOWER(name) = LOWER(?)
+        ''', (name,))
         
-        product_id = cursor.lastrowid
-        conn.commit()
+        result = cursor.fetchone()
         conn.close()
-        return product_id
+        
+        if result:
+            return {
+                'exists': True,
+                'id': result[0],
+                'name': result[1],
+                'price': result[2]
+            }
+        else:
+            return {'exists': False}
+    
+    def add_product(self, name, price, description=""):
+        """Add new product with duplicate checking"""
+        # Check if product already exists
+        existing = self.check_product_exists(name)
+        if existing['exists']:
+            return {
+                'success': False,
+                'message': f"Produk '{name}' sudah ada di database dengan harga Rp {existing['price']:,.0f}",
+                'existing_product': existing
+            }
+        
+        # Add new product
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute('''
+                INSERT INTO products (name, price, description)
+                VALUES (?, ?, ?)
+            ''', (name, price, description))
+            
+            product_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+            
+            return {
+                'success': True,
+                'message': f"Produk '{name}' berhasil disimpan ke master data!",
+                'product_id': product_id
+            }
+        except Exception as e:
+            conn.rollback()
+            conn.close()
+            return {
+                'success': False,
+                'message': f"Error menyimpan produk: {str(e)}"
+            }
     
     def get_products(self):
         """Get all products"""

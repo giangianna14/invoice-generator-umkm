@@ -195,12 +195,28 @@ def create_invoice_page():
                 col_save, col_info = st.columns([1, 3])
                 with col_save:
                     if st.button("💾 Simpan ke Master Data", type="secondary", use_container_width=True):
-                        try:
-                            st.session_state.db.add_product(product_name, unit_price, "Ditambah dari invoice")
-                            st.success(f"✅ '{product_name}' berhasil disimpan ke master data!")
+                        result = st.session_state.db.add_product(product_name, unit_price, "Ditambah dari invoice")
+                        
+                        if result['success']:
+                            st.success(result['message'])
                             st.rerun()
-                        except Exception as e:
-                            st.error(f"Error: {str(e)}")
+                        else:
+                            if 'existing_product' in result:
+                                # Show warning for duplicate with existing product info
+                                existing = result['existing_product']
+                                st.warning(f"⚠️ {result['message']}")
+                                
+                                # Show option to use existing product
+                                if st.button("📦 Gunakan Produk yang Ada", type="secondary", key="use_existing"):
+                                    st.session_state.invoice_items.append({
+                                        'product_name': existing['name'],
+                                        'quantity': quantity,
+                                        'unit_price': existing['price']
+                                    })
+                                    st.success(f"✅ {existing['name']} (dari master data) berhasil ditambahkan!")
+                                    st.rerun()
+                            else:
+                                st.error(result['message'])
                 
                 with col_info:
                     st.info("💡 Simpan produk ini ke master data untuk memudahkan penggunaan di invoice selanjutnya")
@@ -369,9 +385,16 @@ def product_management():
             
             if st.form_submit_button("Tambah Produk"):
                 if name and price > 0:
-                    st.session_state.db.add_product(name, price, description)
-                    st.success("Produk berhasil ditambahkan!")
-                    st.rerun()
+                    result = st.session_state.db.add_product(name, price, description)
+                    
+                    if result['success']:
+                        st.success(result['message'])
+                        st.rerun()
+                    else:
+                        if 'existing_product' in result:
+                            st.warning(f"⚠️ {result['message']}")
+                        else:
+                            st.error(result['message'])
                 else:
                     st.error("Nama dan harga produk wajib diisi")
     

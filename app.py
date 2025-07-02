@@ -68,10 +68,64 @@ def show_dashboard():
             avg_invoice = invoices_df['total'].mean()
             st.metric("Rata-rata Invoice", f"Rp {avg_invoice:,.0f}")
         
-        # Recent invoices
+        # Recent invoices with pagination
         st.subheader("Invoice Terbaru")
-        recent_invoices = invoices_df.head(10)[['invoice_number', 'customer_name', 'issue_date', 'total', 'status']]
-        st.dataframe(recent_invoices, use_container_width=True)
+        
+        # Initialize pagination for dashboard
+        if 'dashboard_invoice_page' not in st.session_state:
+            st.session_state.dashboard_invoice_page = 0
+        if 'dashboard_invoices_per_page' not in st.session_state:
+            st.session_state.dashboard_invoices_per_page = 10
+        
+        # Pagination controls for recent invoices
+        total_invoices_count = len(invoices_df)
+        invoices_per_page = st.selectbox("Invoices per halaman", [5, 10, 20], 
+                                       index=[5, 10, 20].index(st.session_state.dashboard_invoices_per_page),
+                                       key="dashboard_invoices_per_page_select")
+        
+        if invoices_per_page != st.session_state.dashboard_invoices_per_page:
+            st.session_state.dashboard_invoices_per_page = invoices_per_page
+            st.session_state.dashboard_invoice_page = 0
+            st.rerun()
+        
+        total_pages = (total_invoices_count - 1) // st.session_state.dashboard_invoices_per_page + 1 if total_invoices_count > 0 else 1
+        
+        # Ensure current page is valid
+        if st.session_state.dashboard_invoice_page >= total_pages:
+            st.session_state.dashboard_invoice_page = max(0, total_pages - 1)
+        
+        start_idx = st.session_state.dashboard_invoice_page * st.session_state.dashboard_invoices_per_page
+        end_idx = min(start_idx + st.session_state.dashboard_invoices_per_page, total_invoices_count)
+        
+        # Display paginated invoices
+        page_invoices = invoices_df.iloc[start_idx:end_idx][['invoice_number', 'customer_name', 'issue_date', 'total', 'status']]
+        st.dataframe(page_invoices, use_container_width=True)
+        
+        # Pagination controls at bottom
+        if total_invoices_count > st.session_state.dashboard_invoices_per_page:
+            st.markdown("---")
+            # Display pagination info
+            st.write(f"Menampilkan {start_idx + 1}-{end_idx} dari {total_invoices_count} invoice")
+            
+            col_nav1, col_nav2, col_nav3, col_nav4, col_nav5 = st.columns([1, 1, 2, 1, 1])
+            with col_nav1:
+                if st.button("⏮️ First", disabled=st.session_state.dashboard_invoice_page == 0, key="dashboard_first", use_container_width=True):
+                    st.session_state.dashboard_invoice_page = 0
+                    st.rerun()
+            with col_nav2:
+                if st.button("◀️ Prev", disabled=st.session_state.dashboard_invoice_page == 0, key="dashboard_prev", use_container_width=True):
+                    st.session_state.dashboard_invoice_page -= 1
+                    st.rerun()
+            with col_nav3:
+                st.markdown(f"<div style='text-align: center; padding: 8px;'><strong>Page {st.session_state.dashboard_invoice_page + 1} of {total_pages}</strong></div>", unsafe_allow_html=True)
+            with col_nav4:
+                if st.button("▶️ Next", disabled=st.session_state.dashboard_invoice_page >= total_pages - 1, key="dashboard_next", use_container_width=True):
+                    st.session_state.dashboard_invoice_page += 1
+                    st.rerun()
+            with col_nav5:
+                if st.button("⏭️ Last", disabled=st.session_state.dashboard_invoice_page >= total_pages - 1, key="dashboard_last", use_container_width=True):
+                    st.session_state.dashboard_invoice_page = total_pages - 1
+                    st.rerun()
         
         # Charts
         col1, col2 = st.columns(2)
@@ -343,6 +397,12 @@ def create_invoice_page():
 def customer_management():
     st.header("👥 Data Customer")
     
+    # Initialize pagination states
+    if 'customer_page' not in st.session_state:
+        st.session_state.customer_page = 0
+    if 'customers_per_page' not in st.session_state:
+        st.session_state.customers_per_page = 5
+    
     # Add new customer
     with st.expander("Tambah Customer Baru"):
         with st.form("customer_form"):
@@ -367,13 +427,40 @@ def customer_management():
     if len(customers_df) > 0:
         st.subheader("Daftar Customer")
         
-        # Search/Filter
-        search_term = st.text_input("🔍 Cari Customer", placeholder="Masukkan nama customer...")
+        # Controls row
+        col_search, col_per_page = st.columns([3, 1])
+        with col_search:
+            search_term = st.text_input("🔍 Cari Customer", placeholder="Masukkan nama customer...")
+        with col_per_page:
+            customers_per_page = st.selectbox("Item per halaman", [5, 10, 20, 50], 
+                                            index=[5, 10, 20, 50].index(st.session_state.customers_per_page))
+            if customers_per_page != st.session_state.customers_per_page:
+                st.session_state.customers_per_page = customers_per_page
+                st.session_state.customer_page = 0  # Reset to first page
+                st.rerun()
+        
+        # Apply search filter
         if search_term:
-            customers_df = customers_df[customers_df['name'].str.contains(search_term, case=False, na=False)]
+            filtered_customers = customers_df[customers_df['name'].str.contains(search_term, case=False, na=False)]
+        else:
+            filtered_customers = customers_df
+        
+        # Pagination logic
+        total_customers = len(filtered_customers)
+        total_pages = (total_customers - 1) // st.session_state.customers_per_page + 1 if total_customers > 0 else 1
+        
+        # Ensure current page is valid
+        if st.session_state.customer_page >= total_pages:
+            st.session_state.customer_page = max(0, total_pages - 1)
+        
+        start_idx = st.session_state.customer_page * st.session_state.customers_per_page
+        end_idx = min(start_idx + st.session_state.customers_per_page, total_customers)
+        
+        # Display current page customers
+        page_customers = filtered_customers.iloc[start_idx:end_idx]
         
         # Display customers table with action buttons
-        for _, customer in customers_df.iterrows():
+        for _, customer in page_customers.iterrows():
             with st.container():
                 col1, col2, col3, col4 = st.columns([3, 2, 1, 1])
                 
@@ -395,54 +482,104 @@ def customer_management():
                 
                 with col4:
                     if st.button("🗑️ Hapus", key=f"delete_customer_{customer['id']}", type="secondary"):
-                        result = st.session_state.db.delete_customer(customer['id'])
-                        if result['success']:
-                            st.success(result['message'])
-                            st.rerun()
-                        else:
-                            st.error(result['message'])
+                        st.session_state.delete_customer_confirm = True
+                        st.session_state.delete_customer_id = customer['id']
+                        st.rerun()
+                
+                # Show edit form directly below selected customer
+                if hasattr(st.session_state, 'edit_customer_id') and st.session_state.edit_customer_id == customer['id']:
+                    with st.expander(f"✏️ Edit Customer: {customer['name']}", expanded=True):
+                        with st.form(f"edit_customer_form_{customer['id']}"):
+                            col1_edit, col2_edit = st.columns(2)
+                            with col1_edit:
+                                edit_name = st.text_input("Nama Customer*", value=customer['name'])
+                                edit_email = st.text_input("Email", value=customer['email'] or "")
+                            with col2_edit:
+                                edit_phone = st.text_input("Telepon", value=customer['phone'] or "")
+                                edit_address = st.text_area("Alamat", value=customer['address'] or "")
+                            
+                            col_update, col_cancel = st.columns(2)
+                            with col_update:
+                                if st.form_submit_button("✏️ Update Customer", type="primary", use_container_width=True):
+                                    if edit_name:
+                                        result = st.session_state.db.update_customer(
+                                            customer['id'], edit_name, edit_email, edit_phone, edit_address
+                                        )
+                                        if result['success']:
+                                            st.success(result['message'])
+                                            del st.session_state.edit_customer_id
+                                            st.rerun()
+                                        else:
+                                            st.error(result['message'])
+                                    else:
+                                        st.error("Nama customer wajib diisi")
+                            
+                            with col_cancel:
+                                if st.form_submit_button("❌ Batal", use_container_width=True):
+                                    del st.session_state.edit_customer_id
+                                    st.rerun()
+                
+                # Show delete confirmation directly below selected customer
+                if hasattr(st.session_state, 'delete_customer_confirm') and st.session_state.delete_customer_confirm and hasattr(st.session_state, 'delete_customer_id') and st.session_state.delete_customer_id == customer['id']:
+                    with st.expander(f"⚠️ Konfirmasi Hapus Customer: {customer['name']}", expanded=True):
+                        st.warning(f"Apakah Anda yakin ingin menghapus customer **{customer['name']}**?")
+                        st.write("Tindakan ini tidak dapat dibatalkan!")
+                        
+                        col_confirm, col_cancel = st.columns(2)
+                        with col_confirm:
+                            if st.button("🗑️ Ya, Hapus", type="primary", use_container_width=True, key=f"confirm_delete_customer_{customer['id']}"):
+                                result = st.session_state.db.delete_customer(customer['id'])
+                                if result['success']:
+                                    st.success(result['message'])
+                                else:
+                                    st.error(result['message'])
+                                del st.session_state.delete_customer_confirm
+                                del st.session_state.delete_customer_id
+                                st.rerun()
+                        with col_cancel:
+                            if st.button("❌ Batal", use_container_width=True, key=f"cancel_delete_customer_{customer['id']}"):
+                                del st.session_state.delete_customer_confirm
+                                del st.session_state.delete_customer_id
+                                st.rerun()
                 
                 st.divider()
         
-        # Edit customer modal
-        if hasattr(st.session_state, 'edit_customer_id') and st.session_state.edit_customer_id:
-            customer_data = st.session_state.db.get_customer_by_id(st.session_state.edit_customer_id)
-            if customer_data:
-                with st.expander(f"✏️ Edit Customer: {customer_data['name']}", expanded=True):
-                    with st.form("edit_customer_form"):
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            edit_name = st.text_input("Nama Customer*", value=customer_data['name'])
-                            edit_email = st.text_input("Email", value=customer_data['email'] or "")
-                        with col2:
-                            edit_phone = st.text_input("Telepon", value=customer_data['phone'] or "")
-                            edit_address = st.text_area("Alamat", value=customer_data['address'] or "")
-                        
-                        col_update, col_cancel = st.columns(2)
-                        with col_update:
-                            if st.form_submit_button("💾 Update Customer", type="primary", use_container_width=True):
-                                if edit_name:
-                                    result = st.session_state.db.update_customer(
-                                        st.session_state.edit_customer_id, edit_name, edit_email, edit_phone, edit_address
-                                    )
-                                    if result['success']:
-                                        st.success(result['message'])
-                                        del st.session_state.edit_customer_id
-                                        st.rerun()
-                                    else:
-                                        st.error(result['message'])
-                                else:
-                                    st.error("Nama customer wajib diisi")
-                        
-                        with col_cancel:
-                            if st.form_submit_button("❌ Batal", use_container_width=True):
-                                del st.session_state.edit_customer_id
-                                st.rerun()
+        # Pagination controls at bottom
+        if total_customers > st.session_state.customers_per_page:
+            st.markdown("---")
+            # Display pagination info
+            st.write(f"Menampilkan {start_idx + 1}-{end_idx} dari {total_customers} customer")
+            
+            col_nav1, col_nav2, col_nav3, col_nav4, col_nav5 = st.columns([1, 1, 2, 1, 1])
+            with col_nav1:
+                if st.button("⏮️ First", disabled=st.session_state.customer_page == 0, use_container_width=True):
+                    st.session_state.customer_page = 0
+                    st.rerun()
+            with col_nav2:
+                if st.button("◀️ Prev", disabled=st.session_state.customer_page == 0, use_container_width=True):
+                    st.session_state.customer_page -= 1
+                    st.rerun()
+            with col_nav3:
+                st.markdown(f"<div style='text-align: center; padding: 8px;'><strong>Page {st.session_state.customer_page + 1} of {total_pages}</strong></div>", unsafe_allow_html=True)
+            with col_nav4:
+                if st.button("▶️ Next", disabled=st.session_state.customer_page >= total_pages - 1, use_container_width=True):
+                    st.session_state.customer_page += 1
+                    st.rerun()
+            with col_nav5:
+                if st.button("⏭️ Last", disabled=st.session_state.customer_page >= total_pages - 1, use_container_width=True):
+                    st.session_state.customer_page = total_pages - 1
+                    st.rerun()
     else:
         st.info("Belum ada customer yang terdaftar")
 
 def product_management():
     st.header("📦 Data Produk")
+    
+    # Initialize pagination states
+    if 'product_page' not in st.session_state:
+        st.session_state.product_page = 0
+    if 'products_per_page' not in st.session_state:
+        st.session_state.products_per_page = 5
     
     # Add new product
     with st.expander("Tambah Produk Baru"):
@@ -474,10 +611,24 @@ def product_management():
     if len(products_df) > 0:
         st.subheader("Daftar Produk")
         
-        # Search/Filter
-        search_term = st.text_input("🔍 Cari Produk", placeholder="Masukkan nama produk...")
+        # Controls row
+        col_search, col_per_page = st.columns([3, 1])
+        with col_search:
+            search_term = st.text_input("🔍 Cari Produk", placeholder="Masukkan nama produk...")
+        with col_per_page:
+            products_per_page = st.selectbox("Item per halaman", [5, 10, 20, 50], 
+                                           index=[5, 10, 20, 50].index(st.session_state.products_per_page),
+                                           key="products_per_page_select")
+            if products_per_page != st.session_state.products_per_page:
+                st.session_state.products_per_page = products_per_page
+                st.session_state.product_page = 0  # Reset to first page
+                st.rerun()
+        
+        # Apply search filter
         if search_term:
-            products_df = products_df[products_df['name'].str.contains(search_term, case=False, na=False)]
+            filtered_products = products_df[products_df['name'].str.contains(search_term, case=False, na=False)]
+        else:
+            filtered_products = products_df
         
         # Sort options
         col_sort, col_order = st.columns(2)
@@ -487,10 +638,24 @@ def product_management():
             sort_order = st.selectbox("Urutan", ["Ascending", "Descending"], index=0)
         
         ascending = sort_order == "Ascending"
-        products_df = products_df.sort_values(by=sort_by, ascending=ascending)
+        filtered_products = filtered_products.sort_values(by=sort_by, ascending=ascending)
+        
+        # Pagination logic
+        total_products = len(filtered_products)
+        total_pages = (total_products - 1) // st.session_state.products_per_page + 1 if total_products > 0 else 1
+        
+        # Ensure current page is valid
+        if st.session_state.product_page >= total_pages:
+            st.session_state.product_page = max(0, total_pages - 1)
+        
+        start_idx = st.session_state.product_page * st.session_state.products_per_page
+        end_idx = min(start_idx + st.session_state.products_per_page, total_products)
+        
+        # Display current page products
+        page_products = filtered_products.iloc[start_idx:end_idx]
         
         # Display products table with action buttons
-        for _, product in products_df.iterrows():
+        for _, product in page_products.iterrows():
             with st.container():
                 col1, col2, col3, col4 = st.columns([3, 2, 1, 1])
                 
@@ -510,48 +675,92 @@ def product_management():
                 
                 with col4:
                     if st.button("🗑️ Hapus", key=f"delete_product_{product['id']}", type="secondary"):
-                        result = st.session_state.db.delete_product(product['id'])
-                        if result['success']:
-                            st.success(result['message'])
-                            st.rerun()
-                        else:
-                            st.error(result['message'])
+                        st.session_state.delete_product_confirm = True
+                        st.session_state.delete_product_id = product['id']
+                        st.rerun()
+                
+                # Show edit form directly below selected product
+                if hasattr(st.session_state, 'edit_product_id') and st.session_state.edit_product_id == product['id']:
+                    with st.expander(f"✏️ Edit Produk: {product['name']}", expanded=True):
+                        with st.form(f"edit_product_form_{product['id']}"):
+                            col1_edit, col2_edit = st.columns(2)
+                            with col1_edit:
+                                edit_name = st.text_input("Nama Produk*", value=product['name'])
+                                edit_price = st.number_input("Harga*", min_value=0.0, value=float(product['price']))
+                            with col2_edit:
+                                edit_description = st.text_area("Deskripsi", value=product['description'] or "")
+                            
+                            col_update, col_cancel = st.columns(2)
+                            with col_update:
+                                if st.form_submit_button("✏️ Update Produk", type="primary", use_container_width=True):
+                                    if edit_name and edit_price > 0:
+                                        result = st.session_state.db.update_product(
+                                            product['id'], edit_name, edit_price, edit_description
+                                        )
+                                        if result['success']:
+                                            st.success(result['message'])
+                                            del st.session_state.edit_product_id
+                                            st.rerun()
+                                        else:
+                                            st.error(result['message'])
+                                    else:
+                                        st.error("Nama dan harga produk wajib diisi")
+                            
+                            with col_cancel:
+                                if st.form_submit_button("❌ Batal", use_container_width=True):
+                                    del st.session_state.edit_product_id
+                                    st.rerun()
+                
+                # Show delete confirmation directly below selected product
+                if hasattr(st.session_state, 'delete_product_confirm') and st.session_state.delete_product_confirm and hasattr(st.session_state, 'delete_product_id') and st.session_state.delete_product_id == product['id']:
+                    with st.expander(f"⚠️ Konfirmasi Hapus Produk: {product['name']}", expanded=True):
+                        st.warning(f"Apakah Anda yakin ingin menghapus produk **{product['name']}**?")
+                        st.write("Tindakan ini tidak dapat dibatalkan!")
+                        
+                        col_confirm, col_cancel = st.columns(2)
+                        with col_confirm:
+                            if st.button("🗑️ Ya, Hapus", type="primary", use_container_width=True, key=f"confirm_delete_product_{product['id']}"):
+                                result = st.session_state.db.delete_product(product['id'])
+                                if result['success']:
+                                    st.success(result['message'])
+                                else:
+                                    st.error(result['message'])
+                                del st.session_state.delete_product_confirm
+                                del st.session_state.delete_product_id
+                                st.rerun()
+                        with col_cancel:
+                            if st.button("❌ Batal", use_container_width=True, key=f"cancel_delete_product_{product['id']}"):
+                                del st.session_state.delete_product_confirm
+                                del st.session_state.delete_product_id
+                                st.rerun()
                 
                 st.divider()
         
-        # Edit product modal
-        if hasattr(st.session_state, 'edit_product_id') and st.session_state.edit_product_id:
-            product_data = st.session_state.db.get_product_by_id(st.session_state.edit_product_id)
-            if product_data:
-                with st.expander(f"✏️ Edit Produk: {product_data['name']}", expanded=True):
-                    with st.form("edit_product_form"):
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            edit_name = st.text_input("Nama Produk*", value=product_data['name'])
-                            edit_price = st.number_input("Harga*", min_value=0.0, value=float(product_data['price']))
-                        with col2:
-                            edit_description = st.text_area("Deskripsi", value=product_data['description'] or "")
-                        
-                        col_update, col_cancel = st.columns(2)
-                        with col_update:
-                            if st.form_submit_button("💾 Update Produk", type="primary", use_container_width=True):
-                                if edit_name and edit_price > 0:
-                                    result = st.session_state.db.update_product(
-                                        st.session_state.edit_product_id, edit_name, edit_price, edit_description
-                                    )
-                                    if result['success']:
-                                        st.success(result['message'])
-                                        del st.session_state.edit_product_id
-                                        st.rerun()
-                                    else:
-                                        st.error(result['message'])
-                                else:
-                                    st.error("Nama dan harga produk wajib diisi")
-                        
-                        with col_cancel:
-                            if st.form_submit_button("❌ Batal", use_container_width=True):
-                                del st.session_state.edit_product_id
-                                st.rerun()
+        # Pagination controls at bottom
+        if total_products > st.session_state.products_per_page:
+            st.markdown("---")
+            # Display pagination info
+            st.write(f"Menampilkan {start_idx + 1}-{end_idx} dari {total_products} produk")
+            
+            col_nav1, col_nav2, col_nav3, col_nav4, col_nav5 = st.columns([1, 1, 2, 1, 1])
+            with col_nav1:
+                if st.button("⏮️ First", disabled=st.session_state.product_page == 0, key="product_first", use_container_width=True):
+                    st.session_state.product_page = 0
+                    st.rerun()
+            with col_nav2:
+                if st.button("◀️ Prev", disabled=st.session_state.product_page == 0, key="product_prev", use_container_width=True):
+                    st.session_state.product_page -= 1
+                    st.rerun()
+            with col_nav3:
+                st.markdown(f"<div style='text-align: center; padding: 8px;'><strong>Page {st.session_state.product_page + 1} of {total_pages}</strong></div>", unsafe_allow_html=True)
+            with col_nav4:
+                if st.button("▶️ Next", disabled=st.session_state.product_page >= total_pages - 1, key="product_next", use_container_width=True):
+                    st.session_state.product_page += 1
+                    st.rerun()
+            with col_nav5:
+                if st.button("⏭️ Last", disabled=st.session_state.product_page >= total_pages - 1, key="product_last", use_container_width=True):
+                    st.session_state.product_page = total_pages - 1
+                    st.rerun()
         
         # Statistics
         st.markdown("---")

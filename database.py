@@ -260,3 +260,202 @@ class Database:
         df = pd.read_sql_query(query, conn, params=params)
         conn.close()
         return df
+    
+    def update_customer(self, customer_id, name, email="", phone="", address=""):
+        """Update existing customer"""
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute('''
+                UPDATE customers 
+                SET name = ?, email = ?, phone = ?, address = ?
+                WHERE id = ?
+            ''', (name, email, phone, address, customer_id))
+            
+            if cursor.rowcount > 0:
+                conn.commit()
+                conn.close()
+                return {
+                    'success': True,
+                    'message': f"Customer '{name}' berhasil diupdate!"
+                }
+            else:
+                conn.close()
+                return {
+                    'success': False,
+                    'message': "Customer tidak ditemukan"
+                }
+        except Exception as e:
+            conn.rollback()
+            conn.close()
+            return {
+                'success': False,
+                'message': f"Error updating customer: {str(e)}"
+            }
+    
+    def delete_customer(self, customer_id):
+        """Delete customer if not used in invoices"""
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        try:
+            # Check if customer is used in invoices
+            cursor.execute('SELECT COUNT(*) FROM invoices WHERE customer_id = ?', (customer_id,))
+            invoice_count = cursor.fetchone()[0]
+            
+            if invoice_count > 0:
+                conn.close()
+                return {
+                    'success': False,
+                    'message': f"Customer tidak dapat dihapus karena sudah digunakan dalam {invoice_count} invoice"
+                }
+            
+            # Get customer name for message
+            cursor.execute('SELECT name FROM customers WHERE id = ?', (customer_id,))
+            result = cursor.fetchone()
+            if not result:
+                conn.close()
+                return {
+                    'success': False,
+                    'message': "Customer tidak ditemukan"
+                }
+            
+            customer_name = result[0]
+            
+            # Delete customer
+            cursor.execute('DELETE FROM customers WHERE id = ?', (customer_id,))
+            conn.commit()
+            conn.close()
+            
+            return {
+                'success': True,
+                'message': f"Customer '{customer_name}' berhasil dihapus!"
+            }
+            
+        except Exception as e:
+            conn.rollback()
+            conn.close()
+            return {
+                'success': False,
+                'message': f"Error deleting customer: {str(e)}"
+            }
+    
+    def get_customer_by_id(self, customer_id):
+        """Get customer details by ID"""
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM customers WHERE id = ?', (customer_id,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            return {
+                'id': result[0],
+                'name': result[1],
+                'email': result[2],
+                'phone': result[3],
+                'address': result[4],
+                'created_at': result[5]
+            }
+        return None
+    
+    def update_product(self, product_id, name, price, description=""):
+        """Update existing product"""
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        try:
+            cursor.execute('''
+                UPDATE products 
+                SET name = ?, price = ?, description = ?
+                WHERE id = ?
+            ''', (name, price, description, product_id))
+            
+            if cursor.rowcount > 0:
+                conn.commit()
+                conn.close()
+                return {
+                    'success': True,
+                    'message': f"Produk '{name}' berhasil diupdate!"
+                }
+            else:
+                conn.close()
+                return {
+                    'success': False,
+                    'message': "Produk tidak ditemukan"
+                }
+        except Exception as e:
+            conn.rollback()
+            conn.close()
+            return {
+                'success': False,
+                'message': f"Error updating product: {str(e)}"
+            }
+    
+    def delete_product(self, product_id):
+        """Delete product if not used in invoices"""
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        try:
+            # Get product name first
+            cursor.execute('SELECT name FROM products WHERE id = ?', (product_id,))
+            result = cursor.fetchone()
+            if not result:
+                conn.close()
+                return {
+                    'success': False,
+                    'message': "Produk tidak ditemukan"
+                }
+            
+            product_name = result[0]
+            
+            # Check if product is used in invoice items (by name matching)
+            cursor.execute('SELECT COUNT(*) FROM invoice_items WHERE product_name = ?', (product_name,))
+            usage_count = cursor.fetchone()[0]
+            
+            if usage_count > 0:
+                conn.close()
+                return {
+                    'success': False,
+                    'message': f"Produk '{product_name}' tidak dapat dihapus karena sudah digunakan dalam {usage_count} invoice"
+                }
+            
+            # Delete product
+            cursor.execute('DELETE FROM products WHERE id = ?', (product_id,))
+            conn.commit()
+            conn.close()
+            
+            return {
+                'success': True,
+                'message': f"Produk '{product_name}' berhasil dihapus!"
+            }
+            
+        except Exception as e:
+            conn.rollback()
+            conn.close()
+            return {
+                'success': False,
+                'message': f"Error deleting product: {str(e)}"
+            }
+    
+    def get_product_by_id(self, product_id):
+        """Get product details by ID"""
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT * FROM products WHERE id = ?', (product_id,))
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            return {
+                'id': result[0],
+                'name': result[1],
+                'price': result[2],
+                'description': result[3],
+                'created_at': result[4]
+            }
+        return None

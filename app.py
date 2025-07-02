@@ -362,11 +362,82 @@ def customer_management():
                 else:
                     st.error("Nama customer wajib diisi")
     
-    # Display customers
+    # Display customers with CRUD actions
     customers_df = st.session_state.db.get_customers()
     if len(customers_df) > 0:
         st.subheader("Daftar Customer")
-        st.dataframe(customers_df, use_container_width=True)
+        
+        # Search/Filter
+        search_term = st.text_input("🔍 Cari Customer", placeholder="Masukkan nama customer...")
+        if search_term:
+            customers_df = customers_df[customers_df['name'].str.contains(search_term, case=False, na=False)]
+        
+        # Display customers table with action buttons
+        for _, customer in customers_df.iterrows():
+            with st.container():
+                col1, col2, col3, col4 = st.columns([3, 2, 1, 1])
+                
+                with col1:
+                    st.write(f"**{customer['name']}**")
+                    if customer['email']:
+                        st.write(f"📧 {customer['email']}")
+                    if customer['phone']:
+                        st.write(f"📱 {customer['phone']}")
+                
+                with col2:
+                    if customer['address']:
+                        st.write(f"📍 {customer['address']}")
+                
+                with col3:
+                    if st.button("✏️ Edit", key=f"edit_customer_{customer['id']}", type="secondary"):
+                        st.session_state.edit_customer_id = customer['id']
+                        st.rerun()
+                
+                with col4:
+                    if st.button("🗑️ Hapus", key=f"delete_customer_{customer['id']}", type="secondary"):
+                        result = st.session_state.db.delete_customer(customer['id'])
+                        if result['success']:
+                            st.success(result['message'])
+                            st.rerun()
+                        else:
+                            st.error(result['message'])
+                
+                st.divider()
+        
+        # Edit customer modal
+        if hasattr(st.session_state, 'edit_customer_id') and st.session_state.edit_customer_id:
+            customer_data = st.session_state.db.get_customer_by_id(st.session_state.edit_customer_id)
+            if customer_data:
+                with st.expander(f"✏️ Edit Customer: {customer_data['name']}", expanded=True):
+                    with st.form("edit_customer_form"):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            edit_name = st.text_input("Nama Customer*", value=customer_data['name'])
+                            edit_email = st.text_input("Email", value=customer_data['email'] or "")
+                        with col2:
+                            edit_phone = st.text_input("Telepon", value=customer_data['phone'] or "")
+                            edit_address = st.text_area("Alamat", value=customer_data['address'] or "")
+                        
+                        col_update, col_cancel = st.columns(2)
+                        with col_update:
+                            if st.form_submit_button("💾 Update Customer", type="primary", use_container_width=True):
+                                if edit_name:
+                                    result = st.session_state.db.update_customer(
+                                        st.session_state.edit_customer_id, edit_name, edit_email, edit_phone, edit_address
+                                    )
+                                    if result['success']:
+                                        st.success(result['message'])
+                                        del st.session_state.edit_customer_id
+                                        st.rerun()
+                                    else:
+                                        st.error(result['message'])
+                                else:
+                                    st.error("Nama customer wajib diisi")
+                        
+                        with col_cancel:
+                            if st.form_submit_button("❌ Batal", use_container_width=True):
+                                del st.session_state.edit_customer_id
+                                st.rerun()
     else:
         st.info("Belum ada customer yang terdaftar")
 
@@ -398,11 +469,105 @@ def product_management():
                 else:
                     st.error("Nama dan harga produk wajib diisi")
     
-    # Display products
+    # Display products with CRUD actions
     products_df = st.session_state.db.get_products()
     if len(products_df) > 0:
         st.subheader("Daftar Produk")
-        st.dataframe(products_df, use_container_width=True)
+        
+        # Search/Filter
+        search_term = st.text_input("🔍 Cari Produk", placeholder="Masukkan nama produk...")
+        if search_term:
+            products_df = products_df[products_df['name'].str.contains(search_term, case=False, na=False)]
+        
+        # Sort options
+        col_sort, col_order = st.columns(2)
+        with col_sort:
+            sort_by = st.selectbox("Urutkan berdasarkan", ["name", "price", "created_at"], index=0)
+        with col_order:
+            sort_order = st.selectbox("Urutan", ["Ascending", "Descending"], index=0)
+        
+        ascending = sort_order == "Ascending"
+        products_df = products_df.sort_values(by=sort_by, ascending=ascending)
+        
+        # Display products table with action buttons
+        for _, product in products_df.iterrows():
+            with st.container():
+                col1, col2, col3, col4 = st.columns([3, 2, 1, 1])
+                
+                with col1:
+                    st.write(f"**{product['name']}**")
+                    if product['description']:
+                        st.write(f"📝 {product['description']}")
+                
+                with col2:
+                    st.write(f"💰 **Rp {product['price']:,.0f}**")
+                    st.write(f"📅 {product['created_at'][:10]}")
+                
+                with col3:
+                    if st.button("✏️ Edit", key=f"edit_product_{product['id']}", type="secondary"):
+                        st.session_state.edit_product_id = product['id']
+                        st.rerun()
+                
+                with col4:
+                    if st.button("🗑️ Hapus", key=f"delete_product_{product['id']}", type="secondary"):
+                        result = st.session_state.db.delete_product(product['id'])
+                        if result['success']:
+                            st.success(result['message'])
+                            st.rerun()
+                        else:
+                            st.error(result['message'])
+                
+                st.divider()
+        
+        # Edit product modal
+        if hasattr(st.session_state, 'edit_product_id') and st.session_state.edit_product_id:
+            product_data = st.session_state.db.get_product_by_id(st.session_state.edit_product_id)
+            if product_data:
+                with st.expander(f"✏️ Edit Produk: {product_data['name']}", expanded=True):
+                    with st.form("edit_product_form"):
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            edit_name = st.text_input("Nama Produk*", value=product_data['name'])
+                            edit_price = st.number_input("Harga*", min_value=0.0, value=float(product_data['price']))
+                        with col2:
+                            edit_description = st.text_area("Deskripsi", value=product_data['description'] or "")
+                        
+                        col_update, col_cancel = st.columns(2)
+                        with col_update:
+                            if st.form_submit_button("💾 Update Produk", type="primary", use_container_width=True):
+                                if edit_name and edit_price > 0:
+                                    result = st.session_state.db.update_product(
+                                        st.session_state.edit_product_id, edit_name, edit_price, edit_description
+                                    )
+                                    if result['success']:
+                                        st.success(result['message'])
+                                        del st.session_state.edit_product_id
+                                        st.rerun()
+                                    else:
+                                        st.error(result['message'])
+                                else:
+                                    st.error("Nama dan harga produk wajib diisi")
+                        
+                        with col_cancel:
+                            if st.form_submit_button("❌ Batal", use_container_width=True):
+                                del st.session_state.edit_product_id
+                                st.rerun()
+        
+        # Statistics
+        st.markdown("---")
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Produk", len(products_df))
+        with col2:
+            avg_price = products_df['price'].mean()
+            st.metric("Harga Rata-rata", f"Rp {avg_price:,.0f}")
+        with col3:
+            max_price = products_df['price'].max()
+            st.metric("Harga Tertinggi", f"Rp {max_price:,.0f}")
+        with col4:
+            min_price = products_df['price'].min()
+            st.metric("Harga Terendah", f"Rp {min_price:,.0f}")
+            
     else:
         st.info("Belum ada produk yang terdaftar")
 
